@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KUTRAL_OS v3 | Comunitat Valenciana — Demo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Consolas','Courier New',monospace;background:#050914;color:#cbd5e1;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  header{border-bottom:1px solid rgba(30,58,138,.5);background:#02040a;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .logo{width:38px;height:38px;border:2px solid rgba(249,115,22,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;animation:spin 4s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  h1{color:#fff;font-size:18px;letter-spacing:.16em;font-weight:900;}
+  h1 span{color:#f97316;}
+  .sub{font-size:8px;color:#60a5fa;text-transform:uppercase;letter-spacing:.14em;}
+  .badge{padding:5px 9px;border-radius:8px;border:1px solid;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:6px;}
+  .badge .dot{width:7px;height:7px;border-radius:50%;}
+  .demo{border-color:rgba(245,158,11,.5);color:#fbbf24;background:rgba(245,158,11,.1);}
+  .demo .dot{background:#fbbf24;}
+  .vivo{border-color:rgba(16,185,129,.5);color:#34d399;background:rgba(16,185,129,.1);}
+  .vivo .dot{background:#34d399;animation:pulse 1.5s infinite;}
+  @keyframes pulse{50%{opacity:.25;}}
+  .keybox{display:flex;gap:6px;align-items:center;}
+  .keybox input{background:#0a101f;border:1px solid rgba(30,58,138,.6);color:#cbd5e1;padding:6px 8px;border-radius:8px;font-family:inherit;font-size:10px;width:190px;}
+  .keybox button, .btn{background:rgba(30,64,175,.3);border:1px solid rgba(59,130,246,.4);color:#60a5fa;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:700;}
+  .keybox button:hover,.btn:hover{background:rgba(30,64,175,.5);}
+  .reloj{font-size:18px;color:#fff;font-weight:900;letter-spacing:.06em;min-width:100px;text-align:right;}
+  .layout{flex:1;display:grid;grid-template-columns:300px 1fr 400px;min-height:0;}
+  @media (max-width:1150px){.layout{grid-template-columns:1fr;overflow-y:auto;}#map{min-height:320px;}body{overflow:auto;height:auto;}}
+  .col{display:flex;flex-direction:column;min-height:0;border-right:1px solid rgba(30,58,138,.3);}
+  .panel-h{font-size:9px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:.16em;padding:10px 12px 7px;border-bottom:1px solid rgba(30,58,138,.4);background:#0a101f;}
+  /* HUNTER */
+  .hunter{padding:10px 12px;background:#0a101f;border-bottom:1px solid rgba(249,115,22,.35);}
+  .hunter .hl{font-size:9px;font-weight:900;color:#fb923c;text-transform:uppercase;letter-spacing:.16em;margin-bottom:7px;}
+  .hunter .fila{display:flex;gap:6px;}
+  .hunter input{flex:1;background:#050914;border:1px solid rgba(249,115,22,.4);color:#fde68a;padding:7px 9px;border-radius:8px;font-family:inherit;font-size:10px;}
+  .hunter button{background:rgba(249,115,22,.2);border:1px solid rgba(249,115,22,.5);color:#fb923c;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:900;}
+  .hunter .res{margin-top:7px;}
+  .hunter .res div{padding:6px 8px;border:1px solid rgba(249,115,22,.25);border-radius:8px;font-size:10px;color:#fde68a;cursor:pointer;margin-bottom:5px;background:rgba(249,115,22,.05);}
+  .hunter .res div:hover{background:rgba(249,115,22,.15);}
+  .alerta-triage{display:none;margin:8px 12px 0;padding:8px 10px;border-radius:9px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.6);color:#fca5a5;animation:pulse 1.4s infinite;}
+  .alerta-triage.on{display:block;}
+  .lista{flex:1;overflow-y:auto;padding:10px;background:#070d1c;}
+  .nodo{padding:10px;border-radius:11px;border:1px solid rgba(30,58,138,.3);background:#050914;cursor:pointer;margin-bottom:8px;transition:all .2s;position:relative;}
+  .nodo:hover{border-color:rgba(59,130,246,.5);}
+  .nodo.sel-Rojo{border-color:#ef4444;background:rgba(239,68,68,.09);box-shadow:0 0 12px rgba(239,68,68,.35);}
+  .nodo.sel-Amarillo{border-color:#fbbf24;background:rgba(251,191,36,.09);box-shadow:0 0 12px rgba(251,191,36,.25);}
+  .nodo.sel-Verde{border-color:#10b981;background:rgba(16,185,129,.09);box-shadow:0 0 12px rgba(16,185,129,.2);}
+  .nodo .tipo{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;}
+  .nodo .nom{font-size:11px;font-weight:700;color:#e2e8f0;margin:2px 0 5px;line-height:1.3;padding-right:34px;}
+  .nodo .datos{font-size:9px;display:flex;gap:8px;flex-wrap:wrap;}
+  .t{color:#fb923c;}.h{color:#60a5fa;}.v{color:#94a3b8;}
+  .pill{position:absolute;top:10px;right:10px;width:10px;height:10px;border-radius:50%;}
+  .p-Rojo{background:#ef4444;box-shadow:0 0 9px rgba(239,68,68,.9);animation:pulse 1.2s infinite;}
+  .p-Amarillo{background:#fbbf24;box-shadow:0 0 9px rgba(251,191,36,.8);}
+  .p-Verde{background:#10b981;box-shadow:0 0 9px rgba(16,185,129,.7);}
+  .mini-acciones{position:absolute;bottom:8px;right:8px;display:flex;gap:4px;}
+  .mini-acciones button{background:transparent;border:1px solid rgba(100,116,139,.4);color:#94a3b8;border-radius:6px;font-size:9px;padding:2px 5px;cursor:pointer;font-family:inherit;}
+  .mini-acciones button:hover{color:#e2e8f0;border-color:#e2e8f0;}
+  #map{width:100%;height:100%;background:#0a101f;}
+  .leaflet-tile{filter:invert(1) hue-rotate(190deg) brightness(.85) contrast(.95) saturate(.55);}
+  .mapwrap{position:relative;min-height:0;display:flex;flex-direction:column;}
+  .map-note{position:absolute;bottom:8px;left:8px;z-index:900;background:rgba(2,4,10,.88);border:1px solid rgba(30,58,138,.5);border-radius:8px;padding:5px 9px;font-size:8px;color:#64748b;max-width:360px;}
+  .map-error{display:none;position:absolute;inset:0;z-index:950;background:#070d1c;color:#94a3b8;font-size:11px;padding:40px;text-align:center;}
+  .tabs{display:flex;background:#0a101f;border-bottom:1px solid rgba(30,58,138,.4);flex-wrap:wrap;}
+  .tab{flex:1;min-width:60px;padding:10px 3px;text-align:center;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.act{color:#60a5fa;border-color:#3b82f6;background:rgba(30,64,175,.12);}
+  .contenido{flex:1;overflow-y:auto;padding:12px;background:#070d1c;}
+  .bloque{background:#0a101f;border:1px solid rgba(30,58,138,.4);border-radius:11px;padding:11px;margin-bottom:10px;}
+  .bloque .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.14em;color:#64748b;margin-bottom:5px;}
+  .bloque .txt{font-size:11px;color:#e2e8f0;line-height:1.5;}
+  .metricas{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+  .metrica{background:#0a101f;border:1px solid rgba(30,58,138,.4);border-radius:11px;padding:9px;text-align:center;}
+  .metrica .ml{font-size:7px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;}
+  .metrica .mv{font-size:17px;font-weight:900;margin-top:2px;}
+  .motorbox{border-radius:11px;padding:11px;border:1px solid;margin-bottom:10px;}
+  .m-Rojo{border-color:#ef4444;background:rgba(239,68,68,.08);color:#fca5a5;}
+  .m-Amarillo{border-color:#fbbf24;background:rgba(251,191,36,.08);color:#fde68a;}
+  .m-Verde{border-color:#10b981;background:rgba(16,185,129,.08);color:#6ee7b7;}
+  .motorbox .mt{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.13em;opacity:.8;margin-bottom:6px;}
+  .motorbox .res{font-size:11px;color:#f1f5f9;line-height:1.5;margin-bottom:7px;}
+  .motorbox .acc{font-size:10px;font-weight:700;background:rgba(0,0,0,.4);border:1px solid currentColor;border-radius:9px;padding:8px;}
+  .rec-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(30,58,138,.2);font-size:10px;}
+  .rec-item:last-child{border:none;}
+  .rec-ico{font-size:13px;width:20px;text-align:center;flex-shrink:0;}
+  .rec-item b{color:#e2e8f0;display:block;font-size:10px;}
+  .rec-item small{color:#94a3b8;font-size:9px;line-height:1.4;}
+  .rec-item a{color:#60a5fa;text-decoration:none;}
+  table{width:100%;border-collapse:collapse;font-size:9px;}
+  th{text-align:left;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-size:7px;padding:5px 3px;border-bottom:1px solid rgba(30,58,138,.4);}
+  td{padding:6px 3px;border-bottom:1px solid rgba(30,58,138,.15);color:#cbd5e1;vertical-align:top;}
+  .est-plan{color:#60a5fa;}.est-aprob{color:#fbbf24;}.est-ejec{color:#34d399;font-weight:900;}
+  .btnmini{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.5);color:#34d399;padding:3px 7px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:8px;font-weight:700;}
+  .btnwarn{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);color:#fb923c;padding:8px 12px;border-radius:9px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:900;width:100%;letter-spacing:.06em;text-transform:uppercase;}
+  .btnok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.5);color:#34d399;padding:8px 12px;border-radius:9px;cursor:pointer;font-family:inherit;font-size:10px;font-weight:900;width:100%;letter-spacing:.06em;text-transform:uppercase;}
+  .factores{background:#0a101f;border:1px dashed rgba(245,158,11,.4);border-radius:11px;padding:9px;font-size:9px;color:#fbbf24;margin-bottom:10px;line-height:1.7;}
+  .factores input{width:56px;background:#050914;border:1px solid rgba(245,158,11,.4);color:#fde68a;border-radius:6px;padding:2px 4px;font-family:inherit;font-size:9px;text-align:right;}
+  .impacto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .imp{background:#0a101f;border:1px solid rgba(16,185,129,.35);border-radius:11px;padding:12px;text-align:center;}
+  .imp .iv{font-size:21px;font-weight:900;color:#34d399;}
+  .imp .il{font-size:7px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;}
+  .registro-strip{border-top:1px solid rgba(30,58,138,.4);background:#02040a;padding:7px 12px;max-height:140px;overflow-y:auto;}
+  .registro-strip h3{font-size:8px;color:#60a5fa;text-transform:uppercase;letter-spacing:.13em;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .btn-audit{background:rgba(180,83,9,.25);border:1px solid rgba(245,158,11,.5);color:#fbbf24;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700;font-size:7px;letter-spacing:.06em;text-transform:uppercase;}
+  .ok{color:#34d399;font-weight:900;}.mal{color:#f87171;font-weight:900;}
+  .aviso{display:none;margin:5px 0;padding:7px 9px;border-radius:8px;font-size:9px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.5);color:#fca5a5;}
+  .aviso.mostrar{display:block;}
+  .prop{background:rgba(0,0,0,.35);border:1px solid rgba(59,130,246,.35);border-radius:10px;padding:10px;font-size:10px;line-height:1.6;color:#dbeafe;margin-bottom:8px;white-space:pre-wrap;}
+  .firma{display:flex;gap:6px;margin-top:8px;}
+  .firma input{flex:1;background:#050914;border:1px solid rgba(16,185,129,.4);color:#a7f3d0;padding:7px 9px;border-radius:8px;font-family:inherit;font-size:10px;}
+  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:#050914;}::-webkit-scrollbar-thumb{background:#1e3a8a;border-radius:8px;}
+  .leaflet-container{font-family:inherit;background:#0a101f;}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0a101f;color:#e2e8f0;border:1px solid rgba(59,130,246,.4);}
+  .leaflet-popup-content{font-size:10px;font-family:'Consolas',monospace;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">🔥</div>
+    <div>
+      <h1>KUTRAL<span>_OS</span> v3</h1>
+      <p class="sub">Centro de Mando Preventivo · Comunitat Valenciana · El humano decide</p>
+    </div>
+    <div id="badge" class="badge demo"><span class="dot"></span><span id="badge-txt">Modo demostración</span></div>
+  </div>
+  <div class="keybox">
+    <input id="apikey" type="password" placeholder="Clave OpenWeather (opcional) → clima real">
+    <button onclick="activarVivo()">Conectar</button>
+    <div class="reloj" id="reloj">--:--:--</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- IZQUIERDA: HUNTER + TRIAGE -->
+  <div class="col">
+    <div class="hunter">
+      <div class="hl">🎯 Modo HUNTER — cazar y nombrar focos</div>
+      <div class="fila">
+        <input id="hunter-q" placeholder="Buscar lugar de España… (ej: Chinchilla, Albacete)" onkeydown="if(event.key==='Enter')buscarHunter()">
+        <button onclick="buscarHunter()">Buscar</button>
+      </div>
+      <div class="res" id="hunter-res"></div>
+    </div>
+    <div class="alerta-triage" id="alerta-triage">⚠ Triage intensificado: <span id="n-rojos">0</span> focos en Rojo — seguimiento cada 20 s</div>
+    <div class="panel-h" style="margin-top:6px;">📋 Triage — ordenado por riesgo</div>
+    <div class="lista" id="lista"></div>
+  </div>
+
+  <!-- CENTRO: MAPA -->
+  <div class="mapwrap">
+    <div id="map"></div>
+    <div class="map-error" id="map-error">El mapa no pudo cargar (falta internet o el proveedor no respondió).<br><br><button class="btn" onclick="reintentarMapa()">Reintentar mapa</button><br><br>El resto del centro de mando sigue operativo.</div>
+    <div class="map-note">Zonas base: ubicaciones reales de la provincia de Valencia. Recursos operativos, responsables y teléfonos: demostración — en despliegue se cargan los reales con el organismo territorial.</div>
+  </div>
+
+  <!-- DERECHA: PANELES -->
+  <div class="col" style="border-right:none;border-left:1px solid rgba(30,58,138,.3);">
+    <div class="tabs">
+      <div class="tab act" data-t="tel" onclick="verTab('tel',this)">Motor</div>
+      <div class="tab" data-t="est" onclick="verTab('est',this)">Estrategia</div>
+      <div class="tab" data-t="rec" onclick="verTab('rec',this)">Evacuación</div>
+      <div class="tab" data-t="que" onclick="verTab('que',this)">Quemas</div>
+      <div class="tab" data-t="imp" onclick="verTab('imp',this)">Impacto</div>
+      <div class="tab" data-t="dat" onclick="verTab('dat',this)">Datos·IA</div>
+    </div>
+    <div class="contenido">
+
+      <div id="tab-tel">
+        <div class="metricas">
+          <div class="metrica"><div class="ml">🌡 Temp</div><div class="mv" id="v-temp">—</div></div>
+          <div class="metrica"><div class="ml">💧 Humedad</div><div class="mv" id="v-hum">—</div></div>
+          <div class="metrica"><div class="ml">🌬 Viento</div><div class="mv" id="v-viento">—</div></div>
+        </div>
+        <div class="motorbox m-Verde" id="motor">
+          <div class="mt">⚙️ Motor 30-30-30 — <span id="m-zona">—</span></div>
+          <div class="res" id="m-resumen">Cargando…</div>
+          <div class="acc" id="m-accion">—</div>
+        </div>
+        <div class="bloque"><div class="lbl">🔒 Sellado SHA-256 (encadenado al registro anterior)</div><div class="txt" style="font-size:8px;word-break:break-all;color:#93c5fd;" id="m-hash">—</div><div class="lbl" style="margin-top:5px;" id="m-meta">—</div></div>
+      </div>
+
+      <div id="tab-est" style="display:none;"></div>
+      <div id="tab-rec" style="display:none;"></div>
+
+      <div id="tab-que" style="display:none;">
+        <div class="factores">
+          <b>Factores de cálculo (editables — se calibran con el organismo del territorio):</b><br>
+          Carga combustible <input id="f-carga" type="number" value="25" onchange="renderQuemas()"> t/ha ·
+          CO₂ evitado <input id="f-co2" type="number" value="30" onchange="renderQuemas()"> tCO₂/ha ·
+          Agua evitada <input id="f-agua" type="number" value="20" onchange="renderQuemas()"> m³/ha<br>
+          <span style="opacity:.7">Valores de referencia declarados, no mediciones. Fórmula transparente: impacto = hectáreas × factor.</span>
+        </div>
+        <table>
+          <thead><tr><th>Zona</th><th>Ha</th><th>Ventana</th><th>Estado</th><th>CO₂ evit.</th><th></th></tr></thead>
+          <tbody id="tabla-quemas"></tbody>
+        </table>
+      </div>
+
+      <div id="tab-imp" style="display:none;">
+        <div class="impacto-grid">
+          <div class="imp"><div class="iv" id="i-ha">0</div><div class="il">Ha gestionadas</div></div>
+          <div class="imp"><div class="iv" id="i-co2">0</div><div class="il">tCO₂ evitadas (estim.)</div></div>
+          <div class="imp"><div class="iv" id="i-agua">0</div><div class="il">m³ agua ahorrados (estim.)</div></div>
+          <div class="imp"><div class="iv" id="i-sellos">0</div><div class="il">Registros sellados</div></div>
+        </div>
+        <div class="bloque"><div class="lbl">💶 Elegibilidad</div><div class="txt">Cada tonelada de CO₂ evitada queda sellada con su hectárea, fecha, responsable y hash encadenado: el formato de dato verificable que piden los fondos LIFE, FEDER de transición ecológica y el eje sostenible del Plan Adelante.</div></div>
+      </div>
+
+      <div id="tab-dat" style="display:none;">
+        <div class="bloque"><div class="lbl">🧠 El gran archivo — dataset de entrenamiento de la IA</div><div class="txt">Cada lectura, foco cazado, estrategia aprobada y quema ejecutada se sella y se acumula acá. Ese historial es el dataset con el que se entrena la IA predictiva: aprende de casos reales validados, exitosos y fallidos. En esta versión portátil vive en memoria y se exporta a archivo; en producción vive en Supabase (proyecto bioshield-forensic), tabla append-only: se agrega, nunca se edita.</div></div>
+        <div style="display:grid;gap:8px;margin-bottom:10px;">
+          <button class="btnok" onclick="exportarDataset()">⬇ Descargar dataset IA (.jsonl)</button>
+          <button class="btn" style="width:100%;padding:8px;" onclick="exportarEstado()">⬇ Guardar estado completo (.json)</button>
+          <label class="btn" style="width:100%;padding:8px;text-align:center;cursor:pointer;">⬆ Importar estado / registro<input type="file" accept=".json,.jsonl" style="display:none;" onchange="importarEstado(this)"></label>
+        </div>
+        <div class="bloque"><div class="lbl">🔍 Cómo se audita (cadena de sellos)</div><div class="txt">Cada registro incluye el hash del registro anterior: se forma una cadena. El auditor recalcula los hashes uno por uno con cualquier herramienta SHA-256 estándar; si un dato fue tocado o un registro fue borrado del medio, la cadena se corta y queda a la vista dónde. No hace falta confiar en Kutral: se verifica por fuera.</div></div>
+        <div class="bloque"><div class="lbl">📊 Estado del dataset</div><div class="txt" id="dat-stats">—</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRO -->
+<div class="registro-strip">
+  <h3><span>🔗 Cadena de auditoría — cada evento sellado y encadenado</span><span><button class="btn-audit" onclick="verificarCadena()">Verificar cadena completa</button> <button class="btn-audit" onclick="simularFraude()">Prueba: alterar un dato</button></span></h3>
+  <div id="aviso" class="aviso"></div>
+  <table>
+    <thead><tr><th>Hora</th><th>Evento</th><th>Detalle</th><th>Hash (inicio)</th><th>Integridad</th></tr></thead>
+    <tbody id="tabla-reg"></tbody>
+  </table>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" onerror="cargarLeafletAlternativo()"></script>
+<script>
+// ================= SHA-256 puro (verificado contra OpenSSL) =================
+function sha256(ascii){function rr(v,a){return(v>>>a)|(v<<(32-a))}var mL=ascii.length*8,result='',words=[],i,j;var h=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pC=k.length;var isC={};for(var cand=2;pC<64;cand++){if(!isC[cand]){for(i=0;i<313;i+=cand){isC[i]=cand}h[pC]=(Math.pow(cand,.5)*4294967296)|0;k[pC++]=(Math.pow(cand,1/3)*4294967296)|0}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(i=0;i<ascii.length;i++){j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=(mL/4294967296)|0;words[words.length]=(mL|0);for(j=0;j<words.length;){var w=words.slice(j,j+=16),oH=h;h=h.slice(0,8);for(i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=h[0],e=h[4];var t1=h[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&h[5])^(~e&h[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&h[1])^(a&h[2])^(h[1]&h[2]));h=[(t1+t2)|0].concat(h);h[4]=(h[4]+t1)|0}for(i=0;i<8;i++)h[i]=(h[i]+oH[i])|0}for(i=0;i<8;i++){for(j=3;j+1;j--){var b=(h[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16)}}return result}
+function hashDe(o){return sha256(unescape(encodeURIComponent(JSON.stringify(o))))}
+
+// ================= ZONAS BASE (ubicaciones reales CLM · recursos demo) =================
+let zonas=[
+ {id:1,tipo:"zona",clase:"Forestal · alto riesgo histórico",nombre:"Sierra Calderona — Náquera",lat:39.662,lng:-0.421,ha:1700,resp:"Coord. forestal (demo)",tel:"+34 900 000 001",demo:{temp:35.8,hum:24,viento:32},rec:{agua:[{n:"Balsa CI Náquera (demo)",lat:39.655,lng:-0.430}],enc:[{n:"Encuentro: Náquera, plaza del poble (demo)",lat:39.662,lng:-0.423}],corta:"Fajas en interfaz con urbanizaciones (demo) — a cargar con el organismo local",rutas:"CV-310 hacia Bétera y CV-315 (demo). Urbanizaciones dispersas: aviso coordinado.",medios:"Retén de la Calderona + apoyo desde Bétera (demo)."}},
+ {id:2,tipo:"zona",clase:"Forestal · parque natural",nombre:"Parc Natural del Túria — Riba-roja",lat:39.545,lng:-0.552,ha:1200,resp:"Dirección del parque (demo)",tel:"+34 900 000 002",demo:{temp:34.6,hum:27,viento:29},rec:{agua:[{n:"Punto de carga río Túria (demo)",lat:39.549,lng:-0.560}],enc:[{n:"Encuentro: área recreativa (demo)",lat:39.543,lng:-0.548}],corta:"Cortafuegos en ribera y pinar (demo)",rutas:"CV-370 y CV-336 (demo). Coordinación con núcleos de Riba-roja y Vilamarxant.",medios:"Vigilancia de campaña + medios del consorcio (demo)."}},
+ {id:3,tipo:"zona",clase:"Forestal · pinar costero",nombre:"Devesa de l'Albufera",lat:39.325,lng:-0.313,ha:800,resp:"Servicio Devesa-Albufera (demo)",tel:"+34 900 000 003",demo:{temp:33.2,hum:38,viento:24},rec:{agua:[{n:"Hidrantes de la Devesa (demo)",lat:39.330,lng:-0.310}],enc:[{n:"Encuentro: El Saler, aparcamiento norte (demo)",lat:39.352,lng:-0.310}],corta:"Fajas del pinar costero (demo)",rutas:"CV-500 en ambos sentidos (demo). Alta afluencia en verano: prever evacuación de playas.",medios:"Dispositivo municipal València + consorcio (demo)."}},
+ {id:4,tipo:"zona",clase:"Forestal · interfaz con núcleos",nombre:"Sierra de Corbera — La Murta",lat:39.128,lng:-0.401,ha:950,resp:"Coord. comarcal Ribera (demo)",tel:"+34 900 000 004",demo:{temp:35.1,hum:25,viento:31},rec:{agua:[{n:"Depósito La Murta (demo)",lat:39.132,lng:-0.408}],enc:[{n:"Encuentro: Alzira, acceso al paraje (demo)",lat:39.140,lng:-0.418}],corta:"Cortafuegos de cresta (demo)",rutas:"CV-50 hacia Alzira y Corbera (demo).",medios:"Retén de la Ribera + apoyo de Alzira (demo)."}},
+ {id:5,tipo:"zona",clase:"Interfaz urbana · extensión hídrica post-DANA",nombre:"Barranco del Poyo — Paiporta",lat:39.428,lng:-0.417,ha:null,resp:"Protección civil local (demo)",tel:"+34 900 000 005",demo:{temp:33.9,hum:30,viento:26},rec:{agua:[],enc:[{n:"Encuentro: punto alto señalizado (demo)",lat:39.430,lng:-0.414}],corta:"No aplica — vigilancia de cauce (demo)",rutas:"Rutas de evacuación vertical a cargar con el municipio (demo). La misma arquitectura que anticipa el fuego vigila umbrales de lluvia y caudal: sensores distintos, misma lógica preventiva.",medios:"Coordinación con protección civil municipal (demo)."}},
+ {id:6,tipo:"zona",clase:"Interfaz urbano-industrial",nombre:"Polígono Fuente del Jarro — Paterna",lat:39.512,lng:-0.468,ha:300,resp:"Seguridad del polígono (demo)",tel:"+34 900 000 006",demo:{temp:36.4,hum:22,viento:30},rec:{agua:[{n:"Red de hidrantes del polígono (demo)",lat:39.514,lng:-0.465}],enc:[{n:"Encuentro: acceso principal (demo)",lat:39.510,lng:-0.472}],corta:"Franja perimetral polígono-monte (demo)",rutas:"CV-365 y A-7 (demo). Verificar planes de autoprotección de naves.",medios:"Parque de bomberos de Paterna (demo)."}}
+];
+let proxFocoNum=1;
+
+// ================= QUEMAS =================
+let quemas=[
+ {id:1,zonaId:1,ha:45,ventana:"14–18 oct 2026",estado:"planificada"},
+ {id:2,zonaId:2,ha:60,ventana:"21–25 oct 2026",estado:"planificada"},
+ {id:3,zonaId:6,ha:30,ventana:"04–08 nov 2026",estado:"aprobada"},
+ {id:4,zonaId:3,ha:52,ventana:"11–15 nov 2026",estado:"aprobada"},
+ {id:5,zonaId:6,ha:12,ventana:"18–20 nov 2026",estado:"planificada"}
+];
+
+// ================= MOTOR 30-30-30 =================
+function evaluar3030(l){
+ const c={temp:l.temp>30,hum:l.hum<30,viento:l.viento>30};
+ const n=[c.temp,c.hum,c.viento].filter(Boolean).length;
+ const estado=n===3?'Rojo':n===2?'Amarillo':'Verde';
+ const pT=Math.min(Math.max(l.temp/30,0),1.5)/1.5,pH=Math.min(Math.max((60-l.hum)/30,0),1.5)/1.5,pV=Math.min(Math.max(l.viento/30,0),1.5)/1.5;
+ const riesgo=Math.round((pT+pH+pV)/3*100);
+ const det=[];
+ if(c.temp)det.push(`temp ${l.temp.toFixed(1)}°C > 30`);
+ if(c.hum)det.push(`humedad ${l.hum.toFixed(0)}% < 30`);
+ if(c.viento)det.push(`viento ${l.viento.toFixed(0)} km/h > 30`);
+ let resumen,accion;
+ if(estado==='Rojo'){resumen=`Alerta Roja: las tres condiciones activas (${det.join(' · ')}). Ventana de ignición crítica.`;accion='Posicionar medios de forma preventiva, verificar puntos de agua y rutas, avisar al responsable. La decisión es del humano a cargo.';}
+ else if(estado==='Amarillo'){resumen=`Advertencia: dos condiciones activas (${det.join(' · ')}). Vigilancia reforzada.`;accion='Aumentar frecuencia de lectura y verificar disponibilidad de cuadrilla.';}
+ else{resumen=det.length===1?`Condición aislada (${det[0]}). Sin alineación de riesgo.`:'Parámetros normales. Sin condiciones activas.';accion='Mantener monitoreo regular.';}
+ return{estado,riesgo,resumen,accion};
+}
+
+// ================= CADENA DE AUDITORÍA (sellos encadenados) =================
+let registro=[]; // cada registro: {n, evento, detalle, extra, capturadoEn, operador, prev, sha256}
+function sellarEvento(evento,detalle,extra,operador){
+ const prev=registro.length?registro[registro.length-1].sha256:'GENESIS';
+ const base={n:registro.length+1,evento,detalle,extra:extra||null,capturadoEn:new Date().toISOString(),operador:operador||'kutral-sistema',prev};
+ const reg={...base,sha256:hashDe(base)};
+ registro.push(reg);
+ return reg;
+}
+function verificarRegistro(r,idx){
+ const{sha256:h,...b}=r;
+ const hashOk=hashDe(b)===h;
+ const prevOk=idx===0?r.prev==='GENESIS':r.prev===registro[idx-1].sha256;
+ return hashOk&&prevOk;
+}
+function verificarCadena(){
+ let rotos=0;
+ registro.forEach((r,i)=>{if(!verificarRegistro(r,i))rotos++;});
+ const a=document.getElementById('aviso');a.className='aviso mostrar';
+ if(rotos===0){a.style.borderColor='rgba(16,185,129,.5)';a.style.background='rgba(16,185,129,.12)';a.style.color='#6ee7b7';a.textContent=`✔ Cadena íntegra: ${registro.length} registros verificados, cero alteraciones. Esto es lo que ve un auditor cuando nadie tocó nada.`;}
+ else{a.style.borderColor='rgba(239,68,68,.5)';a.style.background='rgba(239,68,68,.12)';a.style.color='#fca5a5';a.textContent=`✘ Cadena rota: ${rotos} registro(s) alterados o fuera de secuencia. La auditoría marca exactamente dónde.`;}
+ renderRegistro();
+}
+function simularFraude(){
+ if(!registro.length)return;
+ registro[registro.length-1].detalle+=' [dato corregido a mano]';
+ verificarCadena();
+ const a=document.getElementById('aviso');
+ a.textContent='Se alteró el último registro DESPUÉS del sellado: su hash ya no coincide y la cadena lo delata. '+a.textContent;
+}
+
+// ================= LECTURAS =================
+let apiKey=null,modo='demo',sel=1,lecturas={},cicloTimer=null;
+function jitter(v,amp){return +(v+(Math.random()*2-1)*amp).toFixed(1);}
+async function leerZona(z){
+ if(apiKey){
+  try{
+   const r=await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${z.lat}&lon=${z.lng}&appid=${apiKey}&units=metric&lang=es`);
+   if(!r.ok)throw 0;const d=await r.json();
+   return{temp:+d.main.temp,hum:+d.main.humidity,viento:+((d.wind.speed*3.6).toFixed(1)),fuente:'openweather'};
+  }catch(e){return{...valorDemo(z),fuente:'demo (conexión fallida o clave no activa aún)'};}
+ }
+ return{...valorDemo(z),fuente:'demo'};
+}
+function valorDemo(z){
+ const b=z.demo||{temp:33,hum:26,viento:29};
+ return{temp:jitter(b.temp,.6),hum:jitter(b.hum,1.2),viento:jitter(b.viento,1.5)};
+}
+function activarVivo(){const k=document.getElementById('apikey').value.trim();if(!k){alert('Pegá primero la clave de OpenWeather.');return;}apiKey=k;programarCiclo(0);}
+
+async function ciclo(){
+ let vivas=!!apiKey;
+ for(const z of zonas){
+  const l=await leerZona(z);
+  if(l.fuente!=='openweather')vivas=false;
+  const ev=evaluar3030(l);
+  const cambio=lecturas[z.id]&&lecturas[z.id].estado!==ev.estado;
+  lecturas[z.id]={...l,...ev};
+  const reg=sellarEvento('Lectura',`${z.nombre} → ${ev.estado} (riesgo ${ev.riesgo}/100)`,{temp:l.temp,hum:l.hum,viento:l.viento,fuente:l.fuente});
+  lecturas[z.id].sha256=reg.sha256;lecturas[z.id].capturadoEn=reg.capturadoEn;lecturas[z.id].fuente=l.fuente;
+  if(cambio)sellarEvento('Cambio de estado',`${z.nombre} pasó a ${ev.estado}`,null);
+ }
+ modo=vivas?'vivo':'demo';
+ render();
+ programarCiclo();
+}
+function programarCiclo(ms){
+ clearTimeout(cicloTimer);
+ const rojos=zonas.filter(z=>lecturas[z.id]&&lecturas[z.id].estado==='Rojo').length;
+ const intervalo=ms!==undefined?ms:(rojos>=3?20000:60000); // triage adaptativo
+ cicloTimer=setTimeout(ciclo,intervalo);
+}
+
+// ================= HUNTER: buscar y cazar focos =================
+async function buscarHunter(){
+ const q=document.getElementById('hunter-q').value.trim();
+ const cont=document.getElementById('hunter-res');
+ if(!q){cont.innerHTML='';return;}
+ cont.innerHTML='<div>Buscando…</div>';
+ try{
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=es&limit=3&q=${encodeURIComponent(q)}`,{headers:{'Accept':'application/json'}});
+  const res=await r.json();
+  if(!res.length){cont.innerHTML='<div>Sin resultados. Probá con municipio + provincia.</div>';return;}
+  cont.innerHTML=res.map((p,i)=>`<div onclick='cazarFoco(${JSON.stringify({n:p.display_name.split(',').slice(0,2).join(','),lat:+p.lat,lng:+p.lon}).replace(/'/g,"&#39;")})'>➕ ${p.display_name.split(',').slice(0,3).join(',')}</div>`).join('');
+ }catch(e){cont.innerHTML='<div>El buscador necesita internet (Nominatim/OpenStreetMap no respondió).</div>';}
+}
+function cazarFoco(p){
+ const num=String(proxFocoNum++).padStart(2,'0');
+ const id=100+Number(num);
+ zonas.push({id,tipo:"foco",clase:"Foco HUNTER · en seguimiento",nombre:`FOCO-${num} · ${p.n}`,lat:p.lat,lng:p.lng,ha:null,resp:"— asignar responsable",tel:"",demo:{temp:jitter(34,3),hum:jitter(26,4),viento:jitter(29,5)},rec:{agua:[],enc:[],corta:"Sin cargar — completar en despliegue con el organismo local",rutas:"Sin cargar. Abrí el mapa de la zona para reconocimiento: enlaces en Evacuación.",medios:"Sin asignar."}});
+ sellarEvento('Foco cazado (HUNTER)',`FOCO-${num} · ${p.n} añadido al triage`,{lat:p.lat,lng:p.lng},'operador');
+ document.getElementById('hunter-res').innerHTML='';document.getElementById('hunter-q').value='';
+ sel=id;agregarMarcador(zonas[zonas.length-1]);ciclo();
+}
+function renombrarFoco(id){
+ const z=zonas.find(x=>x.id===id);const nuevo=prompt('Nuevo nombre para el foco:',z.nombre);
+ if(nuevo&&nuevo.trim()){sellarEvento('Foco renombrado',`${z.nombre} → ${nuevo.trim()}`,null,'operador');z.nombre=nuevo.trim();render();}
+}
+function retirarFoco(id){
+ const z=zonas.find(x=>x.id===id);
+ if(!confirm(`¿Retirar "${z.nombre}" del triage? (dejó de ser amenaza)`))return;
+ sellarEvento('Foco retirado',`${z.nombre} retirado del triage — dejó de ser amenaza`,null,'operador');
+ if(marcadores[id]&&mapa){mapa.removeLayer(marcadores[id]);delete marcadores[id];}
+ zonas=zonas.filter(x=>x.id!==id);delete lecturas[id];
+ if(sel===id)sel=zonas[0].id;
+ render();
+}
+function asignarResponsable(id){
+ const z=zonas.find(x=>x.id===id);
+ const r=prompt('Responsable de la zona:',z.resp.startsWith('—')?'':z.resp);if(r===null)return;
+ const t=prompt('Teléfono del responsable:',z.tel);if(t===null)return;
+ z.resp=r.trim()||z.resp;z.tel=t.trim();
+ sellarEvento('Dato operativo cargado',`${z.nombre}: responsable "${z.resp}" · tel ${z.tel||'—'}`,null,'operador');
+ render();
+}
+
+// ================= ESTRATEGIA + APROBACIÓN HUMANA =================
+let estrategias=[]; // {id, zonaId, texto, estado:'pendiente'|'aprobada', aprobadaPor, hash}
+function proponerEstrategia(zonaId){
+ const z=zonas.find(x=>x.id===zonaId);const l=lecturas[zonaId];
+ const texto=
+`ESTRATEGIA PREVENTIVA — ${z.nombre}
+Estado del motor: ${l.estado} (riesgo ${l.riesgo}/100) · ${new Date().toLocaleString('es-ES')}
+1. Posicionar medios: ${z.rec.medios}
+2. Verificar puntos de agua: ${z.rec.agua.length?z.rec.agua.map(a=>a.n).join(' · '):'sin cargar — reconocimiento previo'}
+3. Ruta de evacuación de referencia: ${z.rec.rutas}
+4. Cortafuegos: ${z.rec.corta}
+5. Aviso al responsable: ${z.resp} ${z.tel?'· '+z.tel:''}
+Propuesta generada por el motor con datos sellados. NO se ejecuta sin aprobación del humano a cargo.`;
+ estrategias.push({id:Date.now(),zonaId,texto,estado:'pendiente',aprobadaPor:null});
+ sellarEvento('Estrategia propuesta',`${z.nombre} — pendiente de aprobación humana`,null,'kutral-motor');
+ render();verTabPorId('est');
+}
+function aprobarEstrategia(id){
+ const e=estrategias.find(x=>x.id===id);
+ const nombre=document.getElementById('firma-'+id).value.trim();
+ if(!nombre){alert('Escribí el nombre del humano a cargo que aprueba.');return;}
+ e.estado='aprobada';e.aprobadaPor=nombre;
+ const z=zonas.find(x=>x.id===e.zonaId);
+ const reg=sellarEvento('Estrategia APROBADA',`${z.nombre} — aprobada por ${nombre}`,{estrategia:e.texto},nombre);
+ e.hash=reg.sha256;
+ render();
+}
+
+// ================= MAPA (OSM directo + respaldo) =================
+let mapa=null,marcadores={},capaRecursos=null;
+function cargarLeafletAlternativo(){
+ const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+ s.onload=iniciarMapa;s.onerror=()=>document.getElementById('map-error').style.display='block';
+ document.body.appendChild(s);
+ const l=document.createElement('link');l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);
+}
+function iniciarMapa(){
+ if(typeof L==='undefined'){document.getElementById('map-error').style.display='block';return;}
+ try{
+  document.getElementById('map-error').style.display='none';
+  mapa=L.map('map',{zoomControl:true}).setView([39.45,-0.45],10);
+  const capa=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18});
+  let errores=0;
+  capa.on('tileerror',()=>{if(++errores===6){L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{attribution:'© OSM · © CARTO',maxZoom:18}).addTo(mapa);}});
+  capa.addTo(mapa);
+  capaRecursos=L.layerGroup().addTo(mapa);
+  for(const z of zonas)agregarMarcador(z);
+ }catch(e){document.getElementById('map-error').style.display='block';}
+}
+function reintentarMapa(){if(mapa){mapa.remove();mapa=null;marcadores={};}if(typeof L==='undefined')cargarLeafletAlternativo();else iniciarMapa();render();}
+function agregarMarcador(z){
+ if(!mapa)return;
+ const m=L.circleMarker([z.lat,z.lng],{radius:10,weight:2,dashArray:z.tipo==='foco'?'4 3':null}).addTo(mapa);
+ m.on('click',()=>{sel=z.id;render();});
+ marcadores[z.id]=m;
+}
+function colorEstado(e){return e==='Rojo'?'#ef4444':e==='Amarillo'?'#fbbf24':'#10b981';}
+function pintarMapa(){
+ if(!mapa)return;
+ for(const z of zonas){
+  const l=lecturas[z.id];if(!l||!marcadores[z.id])continue;
+  const c=colorEstado(l.estado);
+  marcadores[z.id].setStyle({color:c,fillColor:c,fillOpacity:z.id===sel?.75:.4,radius:z.id===sel?14:(z.tipo==='foco'?11:9)});
+  marcadores[z.id].bindPopup(`<b>${z.nombre}</b><br>${l.estado} · riesgo ${l.riesgo}/100<br>🌡 ${l.temp.toFixed(1)}°C · 💧 ${l.hum.toFixed(0)}% · 🌬 ${l.viento.toFixed(0)} km/h<br>👤 ${z.resp}${z.tel?' · 📞 '+z.tel:''}`);
+ }
+ capaRecursos.clearLayers();
+ const z=zonas.find(x=>x.id===sel);if(!z)return;
+ for(const a of z.rec.agua)L.circleMarker([a.lat,a.lng],{radius:6,color:'#38bdf8',fillColor:'#38bdf8',fillOpacity:.8}).bindPopup('💧 '+a.n).addTo(capaRecursos);
+ for(const p of z.rec.enc)L.circleMarker([p.lat,p.lng],{radius:6,color:'#34d399',fillColor:'#34d399',fillOpacity:.8}).bindPopup('🅿 '+p.n).addTo(capaRecursos);
+ mapa.flyTo([z.lat,z.lng],z.tipo==='foco'?12:11,{duration:.7});
+}
+
+// ================= RENDER =================
+function verTab(id,el){for(const t of['tel','est','rec','que','imp','dat'])document.getElementById('tab-'+t).style.display=t===id?'block':'none';document.querySelectorAll('.tab').forEach(b=>b.classList.remove('act'));el.classList.add('act');}
+function verTabPorId(id){const el=document.querySelector(`.tab[data-t="${id}"]`);if(el)verTab(id,el);}
+
+function render(){
+ const badge=document.getElementById('badge');
+ badge.className='badge '+(modo==='vivo'?'vivo':'demo');
+ document.getElementById('badge-txt').textContent=modo==='vivo'?'Datos en vivo · OpenWeather':'Modo demostración';
+
+ // triage adaptativo
+ const rojos=zonas.filter(z=>lecturas[z.id]&&lecturas[z.id].estado==='Rojo').length;
+ const at=document.getElementById('alerta-triage');
+ document.getElementById('n-rojos').textContent=rojos;
+ at.className='alerta-triage'+(rojos>=3?' on':'');
+
+ // lista ordenada por riesgo
+ const lista=document.getElementById('lista');lista.innerHTML='';
+ const orden=[...zonas].sort((a,b)=>(lecturas[b.id]?.riesgo||0)-(lecturas[a.id]?.riesgo||0));
+ for(const z of orden){
+  const l=lecturas[z.id];if(!l)continue;
+  const d=document.createElement('div');
+  d.className='nodo'+(z.id===sel?' sel-'+l.estado:'');
+  d.onclick=()=>{sel=z.id;render();};
+  const acc=z.tipo==='foco'?`<div class="mini-acciones"><button onclick="event.stopPropagation();renombrarFoco(${z.id})" title="Renombrar">✏️</button><button onclick="event.stopPropagation();retirarFoco(${z.id})" title="Retirar del triage">🗑</button></div>`:'';
+  d.innerHTML=`<span class="pill p-${l.estado}"></span><div class="tipo">${z.clase}${z.ha?' · '+z.ha+' ha':''}</div><div class="nom">${z.nombre}</div><div class="datos"><span class="t">🌡${l.temp.toFixed(1)}°</span><span class="h">💧${l.hum.toFixed(0)}%</span><span class="v">🌬${l.viento.toFixed(0)}</span><span style="color:#94a3b8">R:${l.riesgo}</span></div>${acc}`;
+  lista.appendChild(d);
+ }
+
+ const z=zonas.find(x=>x.id===sel)||zonas[0];sel=z.id;const s=lecturas[sel];
+ if(s){
+  document.getElementById('v-temp').textContent=s.temp.toFixed(1)+'°C';
+  document.getElementById('v-temp').style.color=s.temp>30?'#f87171':'#34d399';
+  document.getElementById('v-hum').textContent=s.hum.toFixed(0)+'%';
+  document.getElementById('v-hum').style.color=s.hum<30?'#fbbf24':'#60a5fa';
+  document.getElementById('v-viento').textContent=s.viento.toFixed(0)+' km/h';
+  document.getElementById('v-viento').style.color=s.viento>30?'#fbbf24':'#e2e8f0';
+  const motor=document.getElementById('motor');motor.className='motorbox m-'+s.estado;
+  document.getElementById('m-zona').textContent=z.nombre;
+  document.getElementById('m-resumen').textContent=s.resumen;
+  document.getElementById('m-accion').textContent='⚡ '+s.accion;
+  document.getElementById('m-hash').textContent=s.sha256||'—';
+  document.getElementById('m-meta').textContent='Capturado: '+(s.capturadoEn?new Date(s.capturadoEn).toLocaleString('es-ES'):'—')+' · Fuente: '+(s.fuente||'—');
+ }
+
+ // ESTRATEGIA
+ const est=document.getElementById('tab-est');
+ const props=estrategias.filter(e=>e.zonaId===sel);
+ est.innerHTML=`
+  <div class="bloque"><div class="lbl">👤 Responsable de la zona</div><div class="rec-item"><div class="rec-ico">👤</div><div><b>${z.resp}</b><small>${z.tel?`📞 <a href="tel:${z.tel}">${z.tel}</a>`:'sin teléfono cargado'} — <a href="#" onclick="asignarResponsable(${z.id});return false;">editar</a></small></div></div></div>
+  ${s&&(s.estado==='Rojo'||s.estado==='Amarillo')?`<button class="btnwarn" onclick="proponerEstrategia(${z.id})">⚡ Proponer estrategia preventiva para esta zona</button><div style="height:10px"></div>`:'<div class="bloque"><div class="txt" style="color:#94a3b8">La zona está en Verde: el motor propone estrategias cuando hay Advertencia o Alerta Roja.</div></div>'}
+  ${props.map(e=>`
+   <div class="bloque">
+    <div class="lbl">${e.estado==='aprobada'?'✅ Estrategia aprobada por '+e.aprobadaPor:'⏳ Propuesta pendiente de aprobación humana'}</div>
+    <div class="prop">${e.texto}</div>
+    ${e.estado==='pendiente'?`<div class="firma"><input id="firma-${e.id}" placeholder="Nombre del humano a cargo que aprueba"><button class="btnmini" onclick="aprobarEstrategia(${e.id})">Aprobar y sellar</button></div>`:`<div class="lbl" style="word-break:break-all;">Sello: ${e.hash||''}</div>`}
+   </div>`).join('')}`;
+
+ // EVACUACIÓN
+ const rec=document.getElementById('tab-rec');
+ rec.innerHTML=`
+  <div class="bloque"><div class="lbl">🚨 Rutas de evacuación — ${z.nombre}</div><div class="rec-item"><div class="rec-ico">🛣</div><div><small>${z.rec.rutas}</small></div></div><div class="rec-item"><div class="rec-ico">🗺</div><div><small>Reconocimiento del terreno: <a href="https://www.openstreetmap.org/#map=14/${z.lat}/${z.lng}" target="_blank">abrir en OpenStreetMap</a> · <a href="https://www.google.com/maps/@${z.lat},${z.lng},14z" target="_blank">abrir en Google Maps</a></small></div></div></div>
+  <div class="bloque"><div class="lbl">💧 Puntos de agua</div>${z.rec.agua.length?z.rec.agua.map(a=>`<div class="rec-item"><div class="rec-ico">💧</div><div><b>${a.n}</b><small>${a.lat.toFixed(4)}, ${a.lng.toFixed(4)} — en el mapa</small></div></div>`).join(''):'<div class="rec-item"><small>Sin cargar — se completan en despliegue.</small></div>'}</div>
+  <div class="bloque"><div class="lbl">🅿 Puntos de encuentro</div>${z.rec.enc.length?z.rec.enc.map(p=>`<div class="rec-item"><div class="rec-ico">🅿</div><div><b>${p.n}</b><small>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} — en el mapa</small></div></div>`).join(''):'<div class="rec-item"><small>Sin cargar — se completan en despliegue.</small></div>'}</div>
+  <div class="bloque"><div class="lbl">🧱 Cortafuegos</div><div class="rec-item"><div class="rec-ico">🧱</div><div><small>${z.rec.corta}</small></div></div></div>
+  <div class="bloque"><div class="lbl">🚒 Medios</div><div class="rec-item"><div class="rec-ico">🚒</div><div><small>${z.rec.medios}</small></div></div></div>
+  <div class="bloque"><div class="lbl">📞 Contacto de la zona</div><div class="rec-item"><div class="rec-ico">👤</div><div><b>${z.resp}</b><small>${z.tel?`<a href="tel:${z.tel}">${z.tel}</a>`:'sin teléfono'} — <a href="#" onclick="asignarResponsable(${z.id});return false;">cargar/editar</a></small></div></div></div>`;
+
+ renderQuemas();
+ pintarMapa();
+ renderRegistro();
+ renderStats();
+}
+
+function renderQuemas(){
+ const fCO2=+document.getElementById('f-co2').value||30,fAgua=+document.getElementById('f-agua').value||20,fCarga=+document.getElementById('f-carga').value||25;
+ const tb=document.getElementById('tabla-quemas');tb.innerHTML='';
+ let haEjec=0;
+ for(const q of quemas){
+  const z=zonas.find(x=>x.id===q.zonaId)||{nombre:'(zona retirada)'};
+  const cls=q.estado==='ejecutada'?'est-ejec':q.estado==='aprobada'?'est-aprob':'est-plan';
+  if(q.estado==='ejecutada')haEjec+=q.ha;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${z.nombre.split('—')[0]}</td><td>${q.ha}</td><td>${q.ventana}</td><td class="${cls}">${q.estado}</td><td>${(q.ha*fCO2).toLocaleString('es-ES')} t</td><td>${q.estado!=='ejecutada'?`<button class="btnmini" onclick="ejecutarQuema(${q.id})">Ejecutar</button>`:'🔒'}</td>`;
+  tb.appendChild(tr);
+ }
+ document.getElementById('i-ha').textContent=haEjec.toLocaleString('es-ES');
+ document.getElementById('i-co2').textContent=(haEjec*fCO2).toLocaleString('es-ES');
+ document.getElementById('i-agua').textContent=(haEjec*fAgua).toLocaleString('es-ES');
+ document.getElementById('i-sellos').textContent=registro.length;
+}
+function ejecutarQuema(id){
+ const q=quemas.find(x=>x.id===id);if(!q)return;
+ q.estado='ejecutada';
+ const z=zonas.find(x=>x.id===q.zonaId);
+ const fCO2=+document.getElementById('f-co2').value||30;
+ sellarEvento('Quema prescrita ejecutada',`${z?z.nombre:'zona'} — ${q.ha} ha · ${q.ha*fCO2} tCO₂ evitadas (factor declarado)`,{ha:q.ha},'operador');
+ renderQuemas();renderRegistro();renderStats();
+}
+
+function renderRegistro(){
+ const tb=document.getElementById('tabla-reg');tb.innerHTML='';
+ const ultimos=registro.slice(-7).reverse();
+ for(const r of ultimos){
+  const idx=registro.indexOf(r);
+  const ok=verificarRegistro(r,idx);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${new Date(r.capturadoEn).toLocaleTimeString('es-ES')}</td><td>${r.evento}</td><td>${r.detalle}</td><td style="color:#93c5fd">${r.sha256.slice(0,16)}…</td><td class="${ok?'ok':'mal'}">${ok?'✔':'✘ ALTERADA'}</td>`;
+  tb.appendChild(tr);
+ }
+}
+
+function renderStats(){
+ const focos=zonas.filter(z=>z.tipo==='foco').length;
+ const aprob=estrategias.filter(e=>e.estado==='aprobada').length;
+ document.getElementById('dat-stats').innerHTML=`Registros sellados: <b>${registro.length}</b> · Zonas base: <b>${zonas.filter(z=>z.tipo==='zona').length}</b> · Focos HUNTER activos: <b>${focos}</b> · Estrategias aprobadas: <b>${aprob}</b> · Quemas ejecutadas: <b>${quemas.filter(q=>q.estado==='ejecutada').length}</b><br><br>Cada registro alimenta el dataset: cuando la IA se entrene, va a aprender de estas decisiones reales — cuáles funcionaron y cuáles no.`;
+ document.getElementById('i-sellos').textContent=registro.length;
+}
+
+// ================= EXPORTAR / IMPORTAR (el gran archivo) =================
+function descargar(nombre,contenido,tipo){
+ const b=new Blob([contenido],{type:tipo||'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nombre;a.click();URL.revokeObjectURL(a.href);
+}
+function exportarDataset(){
+ descargar(`kutral_dataset_${new Date().toISOString().slice(0,10)}.jsonl`,registro.map(r=>JSON.stringify(r)).join('\n'),'application/jsonl');
+ sellarEvento('Dataset exportado',`${registro.length} registros exportados a JSONL`,null,'operador');renderRegistro();renderStats();
+}
+function exportarEstado(){
+ descargar(`kutral_estado_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({zonas,quemas,estrategias,registro,exportadoEn:new Date().toISOString()},null,1));
+}
+function importarEstado(input){
+ const f=input.files[0];if(!f)return;
+ const lector=new FileReader();
+ lector.onload=()=>{
+  try{
+   const d=JSON.parse(lector.result);
+   if(d.registro){registro=d.registro;let okN=0;registro.forEach((r,i)=>{if(verificarRegistro(r,i))okN++;});
+    if(d.zonas)zonas=d.zonas;if(d.quemas)quemas=d.quemas;if(d.estrategias)estrategias=d.estrategias;
+    if(mapa){for(const k in marcadores){mapa.removeLayer(marcadores[k]);}marcadores={};for(const zz of zonas)agregarMarcador(zz);}
+    sel=zonas[0].id;ciclo();
+    alert(`Estado importado. Verificación de la cadena: ${okN}/${registro.length} registros íntegros.`);
+   }else alert('El archivo no tiene un registro válido.');
+  }catch(e){alert('No se pudo leer el archivo: '+e.message);}
+ };
+ lector.readAsText(f);
+}
+
+// ================= ARRANQUE =================
+setInterval(()=>{document.getElementById('reloj').textContent=new Date().toLocaleTimeString('es-ES',{hour12:false});},250);
+window.addEventListener('load',()=>{iniciarMapa();ciclo();});
+</script>
+</body>
+</html>
